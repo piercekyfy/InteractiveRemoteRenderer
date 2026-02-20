@@ -91,14 +91,24 @@ namespace IRR.Server
             av->framerate = new AVRational { num = fps, den = 1 };
             av->pix_fmt = AVPixelFormat.AV_PIX_FMT_YUV420P;
             av->bit_rate = 8000000;
+            
+            av->level = 31;
+            av->rc_max_rate = 8000000;
+            av->rc_buffer_size = 8000000 / fps;
+            av->gop_size = fps * 2; // Produce a key-frame every 2 seconds
 
             if (codecName == "h264_nvenc")
             {
+                ffmpeg.av_opt_set(av->priv_data, "rc", "cbr", 0); // support bandwidth estimation?
+                ffmpeg.av_opt_set(av->priv_data, "profile", "baseline", 0); // contrainsed baseline profile level 3.1
+
                 ffmpeg.av_opt_set(av->priv_data, "preset", "p4", 0); // nvenc middle ground speed/quality
                 ffmpeg.av_opt_set(av->priv_data, "tune", "ll", 0); // tune for low latency
                 ffmpeg.av_opt_set(av->priv_data, "zerolatency", "1", 0); // no frame buffering
                 av->max_b_frames = 0; // no b-frames
                 av->flags |= ffmpeg.AV_CODEC_FLAG_LOW_DELAY;
+                //av->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER; // sps in stream
+                ffmpeg.av_opt_set(av->priv_data, "repeat_headers", "1", 0);
             }
 
             int ret = ffmpeg.avcodec_open2(av, codec, null);
