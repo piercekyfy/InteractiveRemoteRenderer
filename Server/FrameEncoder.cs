@@ -1,4 +1,5 @@
 ﻿using FFmpeg.AutoGen;
+using System.Diagnostics;
 using System.Text;
 
 namespace IRR.Server
@@ -17,6 +18,9 @@ namespace IRR.Server
         private AVPacket* packet; // output buffer
         private SwsContext* sws;
 
+        public Stopwatch EncodeTime = new Stopwatch();
+        public Stopwatch DrainTime = new Stopwatch();
+
         public FrameEncoder(Stream output, int width, int height, int fps, string codecName = "h264_nvenc")
         {
             this.output = output;   
@@ -30,6 +34,7 @@ namespace IRR.Server
 
         public void Encode(Frame frame, long index)
         {
+            EncodeTime.Start();
             ffmpeg.av_frame_make_writable(this.frame);
 
             byte* data = (byte*)frame.Data;
@@ -39,7 +44,10 @@ namespace IRR.Server
             this.frame->pts = index; // presentation timestamp (time_Base = 1/fps, so 0 is frame 0, etc.)
 
             ffmpeg.avcodec_send_frame(av, this.frame);
+            EncodeTime.Stop();
+            DrainTime.Start();
             DrainPacket();
+            DrainTime.Stop();
         }
 
         public void Finish()
@@ -73,6 +81,9 @@ namespace IRR.Server
                     break;
                 ThrowFFmpegError(ret);
 
+                // TEMPORARY PREFIX
+                output.Write(BitConverter.GetBytes(packet->size));
+
                 output.Write(new Span<byte>(packet->data, packet->size));
                 ffmpeg.av_packet_unref(packet);
             }
@@ -95,14 +106,17 @@ namespace IRR.Server
             av->level = 31;
             av->rc_max_rate = 8000000;
             av->rc_buffer_size = 8000000 / fps;
-            av->gop_size = fps * 2; // Produce a key-frame every 2 seconds
+            av->gop_size = fps / 3; // How often a key-frame is produced
 
             if (codecName == "h264_nvenc")
             {
                 ffmpeg.av_opt_set(av->priv_data, "rc", "cbr", 0); // support bandwidth estimation?
                 ffmpeg.av_opt_set(av->priv_data, "profile", "baseline", 0); // contrainsed baseline profile level 3.1
 
-                ffmpeg.av_opt_set(av->priv_data, "preset", "p4", 0); // nvenc middle ground speed/quality
+                //ffmpeg.av_opt_set(av->priv_data, "preset", "p4", 0); // nvenc middle ground speed/quality
+                ffmpeg.av_opt_set(av->priv_data, "preset", "p1", 0); // fastest, low quality
+                ffmpeg.av_opt_set(av->priv_data, "rc-lookahead", "0", 0); // disable lookahead
+
                 ffmpeg.av_opt_set(av->priv_data, "tune", "ll", 0); // tune for low latency
                 ffmpeg.av_opt_set(av->priv_data, "zerolatency", "1", 0); // no frame buffering
                 av->max_b_frames = 0; // no b-frames

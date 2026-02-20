@@ -2,10 +2,13 @@
 using Server;
 using SIPSorcery.Net;
 using SIPSorceryMedia.Abstractions;
+using System.Diagnostics;
 using System.Net;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Net.Sockets;
+
 
 namespace IRR.Server
 {
@@ -32,22 +35,29 @@ namespace IRR.Server
             //await encoder.StopAsync();
             //output.Dispose();
 
+            //var listener = new HttpListener();
+            //listener.Prefixes.Add("http://localhost:5000/");
+
+            //using var rtc = new WebRTCHost(listener);
+            //using var rtcStream = await rtc.Start(fps, cts.Token);
+
+
             using var cts = new CancellationTokenSource();
             int fps = 60;
 
-            var listener = new HttpListener();
-            listener.Prefixes.Add("http://localhost:5000/");
-
-            using var rtc = new WebRTCHost(listener);
-            using var rtcStream = await rtc.Start(fps, cts.Token);
+            var tcp = new TcpListener(IPAddress.Any, 5000);
+            tcp.Start();
+            var client = await tcp.AcceptTcpClientAsync();
+            var stream = client.GetStream();
 
             await using var capture = new CaptureChannel(new DXCapture(20), fps);
             var reader = capture.Start(cts.Token);
 
-            await using var encoder = new EncodeChannel(reader, new FrameEncoder(rtcStream, 1920, 1080, fps));
+            var fe = new FrameEncoder(stream, 1920, 1080, fps);
+            await using var encoder = new EncodeChannel(reader, fe);
             encoder.Start(cts.Token);
 
-            await Task.Delay(20000);
+            await Task.Delay(50000);
 
             cts.Cancel();
         }
