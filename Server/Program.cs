@@ -1,13 +1,11 @@
 ﻿using FFmpeg.AutoGen;
 using Server;
-using SIPSorcery.Net;
-using SIPSorceryMedia.Abstractions;
-using System.Diagnostics;
 using System.Net;
+using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
-using System.Net.Sockets;
+using Windows.Media.Protection.PlayReady;
 
 
 namespace IRR.Server
@@ -35,31 +33,45 @@ namespace IRR.Server
             //await encoder.StopAsync();
             //output.Dispose();
 
-            //var listener = new HttpListener();
-            //listener.Prefixes.Add("http://localhost:5000/");
+            var listener = new HttpListener();
+            listener.Prefixes.Add("http://localhost:5000/");
 
             //using var rtc = new WebRTCHost(listener);
             //using var rtcStream = await rtc.Start(fps, cts.Token);
 
-
-            using var cts = new CancellationTokenSource();
-            int fps = 60;
+            using var cts = new CancellationTokenSource(); 
+            int fps = 30;
 
             var tcp = new TcpListener(IPAddress.Any, 5000);
             tcp.Start();
-            var client = await tcp.AcceptTcpClientAsync();
-            var stream = client.GetStream();
 
-            await using var capture = new CaptureChannel(new DXCapture(20), fps);
-            var reader = capture.Start(cts.Token);
+            TcpClient? client = null;
 
-            var fe = new FrameEncoder(stream, 1920, 1080, fps);
-            await using var encoder = new EncodeChannel(reader, fe);
-            encoder.Start(cts.Token);
 
-            await Task.Delay(50000);
+            while (true)
+            {
+                try
+                {
+                    Console.WriteLine("Accepting...");
+                    client = await tcp.AcceptTcpClientAsync();
+                    client.SendTimeout = 100;
+                    var stream = client.GetStream();
 
-            cts.Cancel();
+                    Console.WriteLine("Streaming...");
+
+                    await using var capture = new CaptureChannel(new DXCapture(20), fps);
+                    var reader = capture.Start(cts.Token);
+
+                    using var fe = new FrameEncoder(stream, 1920, 1080, fps);
+                    await using var encodeChannel = new EncodeChannel(reader, fe);
+                    encodeChannel.Start(cts.Token);
+
+                    await encodeChannel.Join();
+                } catch (Exception ex)
+                {
+                    Console.WriteLine($"Connected ended! Restarting... Exception: {ex.Message}");
+                }
+            }
         }
     }
 }

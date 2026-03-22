@@ -1,0 +1,19 @@
+﻿<Window x:Class="WindowsClient.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WindowsClient"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="1080" Width="1920">
+    <Grid>
+        <Image x:Name="VideoIn" Stretch="Fill"></Image>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right">
+            <Button x:Name="btnConnect" Width="100" Height="25" Content="Connect" Click="btnConnect_Click" Margin="0 5 25 0"/>
+            <Button x:Name="btnDisconnect" Width="100" Height="25" Content="Disconnect" Click="btnDisconnect_Click" Margin="0 5 25 0"/>
+        </StackPanel>
+
+        <Rectangle x:Name="statusSquare" Width="25" Height="25" Fill="Red" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5 5 0 0" RadiusX="25" RadiusY="25"></Rectangle>        
+        
+    </Grid>
+</Window>

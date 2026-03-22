@@ -16,7 +16,7 @@ namespace IRR.Server
             this.encoder = encoder;
         }
 
-        public void Start(CancellationToken ct = default)
+        public async void Start(CancellationToken ct = default)
         {
             cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
@@ -27,6 +27,12 @@ namespace IRR.Server
         {
             cts?.Cancel();
             if (encodeTask != null)
+                await encodeTask;
+        }
+
+        public async Task Join()
+        {
+            if(encodeTask != null)
                 await encodeTask;
         }
 
