@@ -11,6 +11,10 @@
         <StackPanel Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right">
             <Button x:Name="btnConnect" Width="100" Height="25" Content="Connect" Click="btnConnect_Click" Margin="0 5 25 0"/>
             <Button x:Name="btnDisconnect" Width="100" Height="25" Content="Disconnect" Click="btnDisconnect_Click" Margin="0 5 25 0"/>
+            <TextBlock Margin="0 5 5 0" HorizontalAlignment="Center" VerticalAlignment="Center">Host:</TextBlock>
+            <TextBox x:Name="txtHost" Width="100" Height="25" Margin="0 5 25 0"></TextBox>
+            <TextBlock Margin="0 5 5 0" HorizontalAlignment="Center" VerticalAlignment="Center">Port:</TextBlock>
+            <TextBox x:Name="txtPort" Width="100" Height="25" Margin="0 5 25 0"></TextBox>
         </StackPanel>
 
         <Rectangle x:Name="statusSquare" Width="25" Height="25" Fill="Red" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5 5 0 0" RadiusX="25" RadiusY="25"></Rectangle>        

@@ -3,6 +3,7 @@ using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -22,6 +23,7 @@ namespace WindowsClient
     /// </summary>
     public partial class MainWindow : Window
     {
+
         private CancellationTokenSource? renderCts = null;
         Task? renderTask;
 
@@ -29,18 +31,19 @@ namespace WindowsClient
 
         public MainWindow()
         {
-            ffmpeg.RootPath = "C:\\Users\\pierc\\Downloads\\ffmpeg\\bin";
-
             InitializeComponent();
 
             bitmap = new WriteableBitmap(1920, 1080, 96, 96, PixelFormats.Bgr32, null);
             VideoIn.Source = bitmap;
+
+            txtHost.Text = "127.0.0.1";
+            txtPort.Text = "5830";
         }
 
-        private async Task RenderLoop(CancellationToken ct = default)
+        private async Task RenderLoop(IPAddress host, int port, CancellationToken ct = default)
         {
-            TcpClient tcp = new TcpClient();
-            await tcp.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5000));
+            TcpClient tcp = new TcpClient(AddressFamily.InterNetwork);
+            await tcp.ConnectAsync(new IPEndPoint(host, port));
 
             var stream = tcp.GetStream();
 
@@ -113,7 +116,10 @@ namespace WindowsClient
                 return;
 
             renderCts = new CancellationTokenSource();
-            renderTask = Task.Run(() => RenderLoop(renderCts.Token));
+            IPAddress host = IPAddress.Parse(txtHost.Text);
+            int port = int.Parse(txtPort.Text);
+
+            renderTask = Task.Run(() => RenderLoop(host, port, renderCts.Token));
         }
 
         private void btnDisconnect_Click(object sender, RoutedEventArgs e)

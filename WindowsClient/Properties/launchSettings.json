@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "WindowsClient": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "FFMPEG_ROOT_PATH": "C:\\Users\\pierc\\Downloads\\ffmpeg\\bin"
+      },
+      "remoteDebugEnabled": false
+    }
+  }
+}

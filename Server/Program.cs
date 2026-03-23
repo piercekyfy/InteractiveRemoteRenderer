@@ -2,11 +2,6 @@
 using Server;
 using System.Net;
 using System.Net.Sockets;
-using System.Net.WebSockets;
-using System.Text;
-using System.Text.Json;
-using Windows.Media.Protection.PlayReady;
-
 
 namespace IRR.Server
 {
@@ -15,8 +10,8 @@ namespace IRR.Server
 
         public static async Task Main(string[] args)
         {
-            ffmpeg.RootPath = "C:\\Users\\pierc\\Downloads\\ffmpeg\\bin";
-
+            int port = int.Parse(args[0]);
+            ffmpeg.RootPath = Environment.GetEnvironmentVariable("FFMPEG_ROOT_PATH");
             //var output = File.OpenWrite("test.h264");
             //await using var capture = new CaptureChannel(new DXCapture(20), 60);
 
@@ -33,20 +28,18 @@ namespace IRR.Server
             //await encoder.StopAsync();
             //output.Dispose();
 
-            var listener = new HttpListener();
-            listener.Prefixes.Add("http://localhost:5000/");
-
             //using var rtc = new WebRTCHost(listener);
             //using var rtcStream = await rtc.Start(fps, cts.Token);
 
             using var cts = new CancellationTokenSource(); 
             int fps = 30;
 
-            var tcp = new TcpListener(IPAddress.Any, 5000);
+            Console.WriteLine("Running at port: " + port);
+
+            var tcp = new TcpListener(IPAddress.Any, port);
             tcp.Start();
 
             TcpClient? client = null;
-
 
             while (true)
             {
