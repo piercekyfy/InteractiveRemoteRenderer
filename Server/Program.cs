@@ -1,70 +1,111 @@
 ﻿using FFmpeg.AutoGen;
 using Server;
+using SharpGen.Runtime;
 using System.Net;
 using System.Net.Sockets;
+using Vortice.DXGI;
 
 namespace IRR.Server
 {
     public class Program
     {
 
+        public static void EnumerateDisplays()
+        {
+            using IDXGIFactory1 factory = DXGI.CreateDXGIFactory1<IDXGIFactory1>();
+
+            uint gpuIndex = 0;
+            while (factory.EnumAdapters1(gpuIndex, out IDXGIAdapter1? adapter).Success)
+            {
+                using(adapter)
+                {
+                    Console.WriteLine($"> GPU ({gpuIndex}): {adapter.Description1.Description}");
+
+                    uint displayIndex = 0;
+                    while(adapter.EnumOutputs(displayIndex, out IDXGIOutput? output).Success)
+                    {
+                        using (output)
+                        {
+                            Console.WriteLine($"\tDisplay ({displayIndex}): {output.Description.DeviceName}");
+                        }
+                        displayIndex++;
+                    }
+                }
+                gpuIndex++;
+            }
+        }
+
+        // arg0: control-port (integer), arg1: video-port (integer)
         public static async Task Main(string[] args)
         {
-            int port = int.Parse(args[0]);
-            ffmpeg.RootPath = Environment.GetEnvironmentVariable("FFMPEG_ROOT_PATH");
-            //var output = File.OpenWrite("test.h264");
-            //await using var capture = new CaptureChannel(new DXCapture(20), 60);
+            // env
 
-            //CancellationTokenSource cts = new CancellationTokenSource();
+            string? ffmpegPath = Environment.GetEnvironmentVariable("FFMPEG_ROOT_PATH");
 
-            //var reader = capture.Start(cts.Token);
-            //await using var encoder = new EncodeChannel(reader, new FrameEncoder(output, 1920, 1080, 60));
-            //encoder.Start(cts.Token);
+            if (string.IsNullOrEmpty(ffmpegPath))
+            {
+                throw new Exception("FFMPEG not found. Is the environment variable FFMPEG_ROOT_PATH specified?");
+            }
 
-            //await Task.Delay(10000);
-            //cts.Cancel();
+            ffmpeg.RootPath = ffmpegPath;
 
-            //await capture.StopAsync();
-            //await encoder.StopAsync();
-            //output.Dispose();
+            // args
 
-            //using var rtc = new WebRTCHost(listener);
-            //using var rtcStream = await rtc.Start(fps, cts.Token);
+            int controlPort = int.Parse(args[0]);
+            int videoPort = int.Parse(args[1]);
 
-            using var cts = new CancellationTokenSource(); 
+            Console.WriteLine(controlPort + " , " + videoPort);
+
+            // display
+
+            EnumerateDisplays();
+            Console.WriteLine();
+            Console.Write("Use GPU (index): ");
+            int gpuIndex = int.Parse(Console.ReadLine() ?? "0");
+            Console.Write("\nUse Display (index): ");
+            int displayIndex = int.Parse(Console.ReadLine() ?? "0");
+            Console.WriteLine("...");
+
             int fps = 30;
 
-            Console.WriteLine("Running at port: " + port);
-
-            var tcp = new TcpListener(IPAddress.Any, port);
-            tcp.Start();
-
-            TcpClient? client = null;
-
-            while (true)
+            // Test Display and extract parameters
+            DisplayInfo displayInfo = default;
+            try
             {
-                try
-                {
-                    Console.WriteLine("Accepting...");
-                    client = await tcp.AcceptTcpClientAsync();
-                    client.SendTimeout = 100;
-                    var stream = client.GetStream();
-
-                    Console.WriteLine("Streaming...");
-
-                    await using var capture = new CaptureChannel(new DXCapture(20), fps);
-                    var reader = capture.Start(cts.Token);
-
-                    using var fe = new FrameEncoder(stream, 1920, 1080, fps);
-                    await using var encodeChannel = new EncodeChannel(reader, fe);
-                    encodeChannel.Start(cts.Token);
-
-                    await encodeChannel.Join();
-                } catch (Exception ex)
-                {
-                    Console.WriteLine($"Connected ended! Restarting... Exception: {ex.Message}");
-                }
+                using var captureTest = new DXCapture(1, gpuIndex, displayIndex);
+                displayInfo = captureTest.DisplayInfo;
             }
+            catch (SharpGenException ex)
+            {
+                Console.WriteLine($"Failed to initialize DXGI capture. Do the specified GPU and Display indices exist?\nMessage: {ex.Message}");
+            }
+
+            // control
+
+            using var cts = new CancellationTokenSource();
+
+            ServerInfo configuration = new ServerInfo()
+            {
+                DisplayIndex = displayIndex,
+                DisplayWidth = displayInfo.Width,
+                DisplayHeight = displayInfo.Height,
+                VirtualDisplayOffsetX = displayInfo.VirtualLeft,
+                VirtualDisplayOffsetY = displayInfo.VirtualTop,
+                ControlPort = controlPort,
+                VideoPort = videoPort
+            };
+
+
+            ControlServer controlServer = new ControlServer(configuration, cts.Token);
+            VideoServer videoServer = new VideoServer(
+                videoPort,
+                configuration.DisplayWidth, 
+                configuration.DisplayHeight,  
+                1920, 
+                1080, 
+                gpuIndex, displayIndex, fps, cts.Token);
+
+            while(true) { await Task.Delay(10); }
         }
     }
 }

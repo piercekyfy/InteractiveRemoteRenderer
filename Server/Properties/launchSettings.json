@@ -2,7 +2,7 @@
   "profiles": {
     "Server": {
       "commandName": "Project",
-      "commandLineArgs": "5830",
+      "commandLineArgs": "5830 5831",
       "environmentVariables": {
         "FFMPEG_ROOT_PATH": "C:\\Users\\pierc\\Downloads\\ffmpeg\\bin"
       }

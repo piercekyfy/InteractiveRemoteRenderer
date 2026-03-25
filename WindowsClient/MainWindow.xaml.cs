@@ -23,11 +23,11 @@ namespace WindowsClient
     /// </summary>
     public partial class MainWindow : Window
     {
-
         private CancellationTokenSource? renderCts = null;
-        Task? renderTask;
 
         private WriteableBitmap bitmap;
+
+        ControlClient controlClient;
 
         public MainWindow()
         {
@@ -38,19 +38,22 @@ namespace WindowsClient
 
             txtHost.Text = "127.0.0.1";
             txtPort.Text = "5830";
+
+            controlClient = new ControlClient();
+
+            CompositionTarget.Rendering += (s, e) =>
+            {
+                System.Windows.Point localMousePos = Mouse.GetPosition(VideoIn);
+                controlClient.Update(new ClientInfo(VideoIn.ActualWidth, VideoIn.ActualHeight, localMousePos.X, localMousePos.Y));
+            };
         }
 
-        private async Task RenderLoop(IPAddress host, int port, CancellationToken ct = default)
+        private async Task RenderLoop(TcpClient client, CancellationToken ct = default)
         {
-            TcpClient tcp = new TcpClient(AddressFamily.InterNetwork);
-            await tcp.ConnectAsync(new IPEndPoint(host, port));
-
-            var stream = tcp.GetStream();
+            var stream = client.GetStream();
 
             using var decoder = new FrameDecoder(1920, 1080);
             var lenBuf = new byte[4];
-
-            Dispatcher.Invoke(() => statusSquare.Fill = new SolidColorBrush(Colors.Green));
 
             while (!ct.IsCancellationRequested)
             {
@@ -58,40 +61,30 @@ namespace WindowsClient
                 {
                     await stream.ReadExactlyAsync(lenBuf, ct);
                     int size = BitConverter.ToInt32(lenBuf);
-                    Console.WriteLine($"Reading {size}...");
                     var buf = new byte[size];
                     
                     await stream.ReadExactlyAsync(buf, ct);
-                    Console.WriteLine("Got Frame");
 
                     decoder.In(buf, size);
 
                     if (decoder.Reader.TryRead(out Frame? frame))
                     {
-                        Console.WriteLine("Decoded Frame");
-
                         Render(frame);
                     }
                 }
                 catch (OperationCanceledException)
                 {
-                    Console.WriteLine("Finished.");
                     break;
                 }
                 catch (EndOfStreamException)
                 {
-                    Console.WriteLine("Finished.");
                     break;
                 }
                 catch (IOException)
                 {
-                    Console.WriteLine("Disconnected unexpectedly");
                     break;
                 }
             }
-
-            Dispatcher.Invoke(() => statusSquare.Fill = new SolidColorBrush(Colors.Red));
-            renderTask = null;
         }
 
         private void Render(WindowsClient.Frame frame)
@@ -112,21 +105,30 @@ namespace WindowsClient
 
         private void btnConnect_Click(object sender, RoutedEventArgs e)
         {
-            if (renderTask != null)
+            if (controlClient.Connected)
                 return;
-
-            renderCts = new CancellationTokenSource();
+            
             IPAddress host = IPAddress.Parse(txtHost.Text);
             int port = int.Parse(txtPort.Text);
 
-            renderTask = Task.Run(() => RenderLoop(host, port, renderCts.Token));
+            _ = Task.Run(async () =>
+            {
+                await controlClient.Connect(new IPEndPoint(host, port));
+                Dispatcher.Invoke(() => statusSquare.Fill = new SolidColorBrush(Colors.Yellow));
+                TcpClient renderClient = await controlClient.GetVideoClient();
+                Dispatcher.Invoke(() => statusSquare.Fill = new SolidColorBrush(Colors.Green));
+
+                renderCts = new CancellationTokenSource();
+                _ = Task.Run(() => RenderLoop(renderClient, renderCts.Token));
+            });
         }
 
         private void btnDisconnect_Click(object sender, RoutedEventArgs e)
         {
-            if(renderTask != null)
+            if(controlClient.Connected)
             {
-                statusSquare.Fill = new SolidColorBrush(Colors.Yellow);
+                controlClient.Stop();
+                statusSquare.Fill = new SolidColorBrush(Colors.Red);
                 renderCts?.Cancel();
             }
         }

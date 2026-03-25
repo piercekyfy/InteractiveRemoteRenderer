@@ -1,4 +1,5 @@
-﻿using SharpGen.Runtime;
+﻿using Common;
+using SharpGen.Runtime;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
@@ -6,8 +7,18 @@ using Vortice.Mathematics;
 
 namespace IRR.Server
 {
+
+    public struct DisplayInfo
+    {
+        public int VirtualTop;
+        public int VirtualLeft;
+        public int Width;
+        public int Height;
+    }
+
     public class DXCapture : ICapture
     {
+        public DisplayInfo DisplayInfo { get; private set; }
         public int Capacity => framePool == null ? 0 : framePool.Capacity;
 
         private IDXGIAdapter1? adapter;
@@ -20,9 +31,9 @@ namespace IRR.Server
 
         private FramePool? framePool;
 
-        public DXCapture(int capacity, int display = 0, int gpu = 0)
+        public DXCapture(int capacity, int gpu = 0, int display = 0)
         {
-            InitializeDXResources(capacity, display, gpu);
+            InitializeDXResources(capacity, gpu, display);
         }
 
         public Frame? CaptureFrame(int timeout)
@@ -30,8 +41,10 @@ namespace IRR.Server
             if (device == null || duplication == null || stagingTexture == null || framePool == null)
                 throw new InvalidOperationException("Capture is not initialized.");
 
-            Result res = duplication.AcquireNextFrame((uint)timeout, out _, out IDXGIResource? resource);
+            Result res = duplication.AcquireNextFrame((uint)timeout, out OutduplFrameInfo frameInfo, out IDXGIResource? resource);
             if (res.Failure || resource == null) return null;
+
+            // TODO: frameInfo has cursor info
 
             try // Move capture to staging
             {
@@ -67,7 +80,7 @@ namespace IRR.Server
             DisposeDXResources();
         }
 
-        private void InitializeDXResources(int capacity, int display, int gpu)
+        private void InitializeDXResources(int capacity, int gpu, int display)
         {
             using IDXGIFactory1 factory = DXGI.CreateDXGIFactory1<IDXGIFactory1>();
             factory.EnumAdapters1((uint)gpu, out adapter).CheckError();
@@ -76,12 +89,21 @@ namespace IRR.Server
             if (device == null)
                 throw new Exception("Failed to create D3 device.");
 
-            adapter.EnumOutputs((uint)display, out output);
+            adapter.EnumOutputs((uint)display, out output).CheckError();
             output1 = output.QueryInterface<IDXGIOutput1>();
 
             duplication = output1.DuplicateOutput(device);
 
             RectI bounds = output1.Description.DesktopCoordinates;
+
+            DisplayInfo = new DisplayInfo()
+            {
+                VirtualLeft = bounds.Left,
+                VirtualTop = bounds.Top,
+                Width = bounds.Width,
+                Height = bounds.Height,
+            };
+
             stagingTexture = device.CreateTexture2D(new()
             {
                 CPUAccessFlags = CpuAccessFlags.Read,

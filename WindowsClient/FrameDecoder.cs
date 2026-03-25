@@ -1,13 +1,7 @@
 ﻿using FFmpeg.AutoGen;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Channels;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace WindowsClient
 {
@@ -76,9 +70,11 @@ namespace WindowsClient
             if (frame != null)
                 fixed (AVFrame** ptr = &frame) { ffmpeg.av_frame_free(ptr); }
 
-
             if (packet != null)
                 fixed (AVPacket** ptr = &packet) { ffmpeg.av_packet_free(ptr); }
+
+            if (sws != null)
+                ffmpeg.sws_freeContext(sws);
 
             while(frameChannel.Reader.TryRead(out Frame? f))
             {
@@ -89,9 +85,12 @@ namespace WindowsClient
         private void InitializeAVResources()
         {
             AVCodec* codec = ffmpeg.avcodec_find_decoder(AVCodecID.AV_CODEC_ID_H264);
+
+            if (codec == null)
+                throw new Exception("No H264 encoder found.");
+
             av = ffmpeg.avcodec_alloc_context3(codec);
             av->flags |= ffmpeg.AV_CODEC_FLAG_LOW_DELAY;
-            av->flags |= ffmpeg.PARSER_FLAG_COMPLETE_FRAMES;
 
             ffmpeg.avcodec_open2(av, codec, null);
 

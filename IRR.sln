@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebugWindowsClient", "Debug
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsClient", "WindowsClient\WindowsClient.csproj", "{2ACC1D62-E63C-403E-B522-F60CB0C5C5E8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{0154B179-EFE7-4872-AC87-85B3143B4F49}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{2ACC1D62-E63C-403E-B522-F60CB0C5C5E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2ACC1D62-E63C-403E-B522-F60CB0C5C5E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2ACC1D62-E63C-403E-B522-F60CB0C5C5E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0154B179-EFE7-4872-AC87-85B3143B4F49}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0154B179-EFE7-4872-AC87-85B3143B4F49}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0154B179-EFE7-4872-AC87-85B3143B4F49}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0154B179-EFE7-4872-AC87-85B3143B4F49}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
