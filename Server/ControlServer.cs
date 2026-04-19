@@ -59,6 +59,8 @@ namespace Server
 
                     // TODO: move to a real class
 
+                    Console.WriteLine(update.Packet.CursorY);
+
                     // Update mouse pos
                     if(
                         !(lastUpdate.Packet.CursorX == update.Packet.CursorX && lastUpdate.Packet.CursorY == update.Packet.CursorY)

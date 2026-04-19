@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -31,10 +32,18 @@ namespace WindowsClient
     {
         public float WindowSizeX { get; set; }
         public float WindowSizeY { get; set; }
-        public CursorInfo CursorInfo { get; set; } = new CursorInfo();
 
-        private List<ushort> pressedKeys = new List<ushort>();
-        private List<ushort> releasedKeys = new List<ushort>();
+        public CursorInfo CursorInfo
+        {
+            get { lock (cursorLock) return cursorInfo; }
+            set { lock (cursorLock) cursorInfo = value; }
+        }
+
+        private readonly object cursorLock = new object();
+        private CursorInfo cursorInfo = new CursorInfo();
+
+        private ConcurrentQueue<ushort> pressedKeys = new ConcurrentQueue<ushort>();
+        private ConcurrentQueue<ushort> releasedKeys = new ConcurrentQueue<ushort>();
 
         public ClientState(float windowSizeX, float windowSizeY)
         {
@@ -42,36 +51,18 @@ namespace WindowsClient
             WindowSizeY = windowSizeY;            
         }
 
-        public void AddKeyPressed(ushort key)
-        {
-            pressedKeys.Add(key);
-        }
+        public void AddKeyPressed(ushort key) => pressedKeys.Enqueue(key);
+        public void AddKeyReleased(ushort key) => releasedKeys.Enqueue(key);
 
-        public void AddKeyReleased(ushort key)
-        {
-            releasedKeys.Add(key);
-        }
+        public ushort[] ConsumePressed() => Consume(pressedKeys);
+        public ushort[] ConsumeReleased() => Consume(releasedKeys);
 
-        public ushort[] ConsumePressed()
+        private ushort[] Consume(ConcurrentQueue<ushort> queue)
         {
-            ushort[] pressed = new ushort[Math.Min(6, pressedKeys.Count)];
-            for (int i = 0; i < pressed.Length; i++)
-            {
-                pressed[i] = pressedKeys[i];
-            }
-            pressedKeys.RemoveRange(0, pressed.Length);
-            return pressed;
-        }
-
-        public ushort[] ConsumeReleased()
-        {
-            ushort[] released = new ushort[Math.Min(6, releasedKeys.Count)];
-            for (int i = 0; i < released.Length; i++)
-            {
-                released[i] = releasedKeys[i];
-            }
-            releasedKeys.RemoveRange(0, released.Length);
-            return released;
+            var result = new List<ushort>();
+            while (result.Count < 6 && queue.TryDequeue(out ushort key))
+                result.Add(key);
+            return result.ToArray();
         }
     }
 }

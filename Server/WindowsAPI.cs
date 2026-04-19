@@ -14,7 +14,7 @@ namespace Server
             int normX = (x * 65535) / width;
             int normY = (y * 65535) / height;
 
-            var input = new WindowsInput()
+            var input = new WindowsMouseInputWrapper()
             {
                 type = 0,
                 mi = new WindowsMouseInput()
@@ -25,12 +25,12 @@ namespace Server
                 }
             };
 
-            SendInput(1, new[] { input }, Marshal.SizeOf<WindowsInput>());
+            uint result = SendInput(1, new[] { input }, Marshal.SizeOf<WindowsMouseInputWrapper>());
         }
 
         public static void UpdateMouseLeft(bool pressed)
         {
-            var input = new WindowsInput()
+            var input = new WindowsMouseInputWrapper()
             {
                 type = 0,
                 mi = new WindowsMouseInput()
@@ -39,12 +39,12 @@ namespace Server
                 }
             };
 
-            SendInput(1, new[] { input }, Marshal.SizeOf<WindowsInput>());
+            SendInput(1, new[] { input }, Marshal.SizeOf<WindowsMouseInputWrapper>());
         }
 
         public static void UpdateMouseMiddle(bool pressed)
         {
-            var input = new WindowsInput()
+            var input = new WindowsMouseInputWrapper()
             {
                 type = 0,
                 mi = new WindowsMouseInput()
@@ -53,12 +53,12 @@ namespace Server
                 }
             };
 
-            SendInput(1, new[] { input }, Marshal.SizeOf<WindowsInput>());
+            SendInput(1, new[] { input }, Marshal.SizeOf<WindowsMouseInputWrapper>());
         }
 
         public static void UpdateMouseRight(bool pressed)
         {
-            var input = new WindowsInput()
+            var input = new WindowsMouseInputWrapper()
             {
                 type = 0,
                 mi = new WindowsMouseInput()
@@ -67,12 +67,12 @@ namespace Server
                 }
             };
 
-            SendInput(1, new[] { input }, Marshal.SizeOf<WindowsInput>());
+            SendInput(1, new[] { input }, Marshal.SizeOf<WindowsMouseInputWrapper>());
         }
 
         public static void UpdateKey(ushort key, bool pressed)
         {
-            var input = new WindowsInput()
+            var input = new WindowsKeyboardInputWrapper()
             {
                 type = 1,
                 ki = new WindowsKeyboardInput()
@@ -82,19 +82,26 @@ namespace Server
                 }
             };
 
-            SendInput(1, new[] { input }, Marshal.SizeOf<WindowsInput>());
+            SendInput(1, new[] { input }, Marshal.SizeOf<WindowsKeyboardInputWrapper>());
         }
 
         [DllImport("user32.dll")]
-        private static extern uint SendInput(uint nInputs, WindowsInput[] pInputs, int cbSize);
+        private static extern uint SendInput(uint nInputs, WindowsMouseInputWrapper[] pInputs, int cbSize);
+        [DllImport("user32.dll")]
+        private static extern uint SendInput(uint nInputs, WindowsKeyboardInputWrapper[] pInputs, int cbSize);
 
-        [StructLayout(LayoutKind.Explicit)]
-        private struct WindowsInput
+        [StructLayout(LayoutKind.Sequential)]
+        private struct WindowsMouseInputWrapper
         {
-            [FieldOffset(0)] public uint type; // 0: mouse, 1: keyboard, 2: hardware
-            // since these share the same offset, it uses the one that is set.
-            [FieldOffset(4)] public WindowsMouseInput mi;
-            [FieldOffset(4)] public WindowsKeyboardInput ki;
+            public uint type; // 0: mouse, 1: keyboard, 2: hardware
+            public WindowsMouseInput mi;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct WindowsKeyboardInputWrapper
+        {
+            public uint type; // 0: mouse, 1: keyboard, 2: hardware
+            public WindowsKeyboardInput ki;
         }
 
         [StructLayout(LayoutKind.Sequential)]
