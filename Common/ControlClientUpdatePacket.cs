@@ -8,11 +8,15 @@ using System.Threading.Tasks;
 namespace Common
 {
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct ControlClientUpdatePacket
+    public unsafe struct ControlClientUpdatePacket
     {
         public float CursorX { get; set; }
         public float CursorY { get; set; }
         public byte CursorPressedState { get; set; }
+        public int PressedCount { get; set; }
+        public int ReleasedCount { get; set; }
+        public fixed ushort PressedKeys[6];
+        public fixed ushort ReleasedKeys[6];
     }
 
     public class ControlClientUpdatePackerWrapper
@@ -29,6 +33,42 @@ namespace Common
             this.packet = packet;
         }
 
+        public ushort[] PressedKeys { get {
+                ushort[] pressed = new ushort[packet.PressedCount];
+                for (int i = 0; i < packet.PressedCount; i++)
+                    unsafe { pressed[i] = packet.PressedKeys[i]; }
+                return pressed;
+            } 
+        }
+
+        public ushort[] ReleasedKeys
+        {
+            get
+            {
+                ushort[] released = new ushort[packet.ReleasedCount];
+                for (int i = 0; i < packet.ReleasedCount; i++)
+                    unsafe { released[i] = packet.ReleasedKeys[i]; }
+                return released;
+            }
+        }
+
+        public void SetKeys(ushort[] pressed, ushort[] released)
+        {
+            for (int i = 0; i < 6; i++)
+            {
+                if (pressed.Length > i)
+                {
+                    unsafe { packet.PressedKeys[i] = pressed[i]; }
+                    packet.PressedCount++;
+                }
+                if (released.Length > i)
+                {
+                    unsafe { packet.ReleasedKeys[i] = released[i]; }
+                    packet.ReleasedCount++;
+                }
+            }
+        }
+
         public void SetPressedState(bool leftPressed, bool middlePressed, bool rightPressed)
         {
             packet.CursorPressedState = (byte)(
@@ -36,7 +76,5 @@ namespace Common
                 (middlePressed ? 1 : 0) << 1 |
                 (rightPressed ? 1 : 0) << 2);
         }
-
-        
     }
 }

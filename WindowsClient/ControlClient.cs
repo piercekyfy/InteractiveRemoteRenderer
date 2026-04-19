@@ -86,6 +86,8 @@ namespace WindowsClient
                     CursorY = cInfo.Y
                 });
 
+                update.SetKeys(clientState.ConsumePressed(), clientState.ConsumeReleased());
+
                 update.SetPressedState(cInfo.ButtonLeftPressed, cInfo.ButtonMiddlePressed, cInfo.ButtonRightPressed);
 
                 MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref update.Packet, 1)).CopyTo(buffer);
@@ -133,6 +135,15 @@ namespace WindowsClient
                 case MouseButton.Right:
                     clientState.CursorInfo.ButtonRightPressed = !up; break;
             }
+        }
+
+        public void UpdateKey(ushort key, bool up)
+        {
+            if (up)
+                clientState.AddKeyReleased(key);
+            else
+                clientState.AddKeyPressed(key);
+            
         }
     }
 }

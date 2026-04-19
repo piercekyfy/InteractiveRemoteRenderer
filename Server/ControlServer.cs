@@ -77,6 +77,12 @@ namespace Server
                     if(lastUpdate.RightPressed != update.RightPressed)
                         WindowsAPI.UpdateMouseRight(update.RightPressed);
 
+                    foreach (ushort key in update.PressedKeys)
+                        WindowsAPI.UpdateKey(key, true);
+
+                    foreach (ushort key in update.ReleasedKeys)
+                        WindowsAPI.UpdateKey(key, false);
+
                     lastUpdate = update;
 
                 } catch (Exception)

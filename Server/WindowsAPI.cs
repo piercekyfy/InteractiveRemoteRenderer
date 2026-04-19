@@ -70,16 +70,31 @@ namespace Server
             SendInput(1, new[] { input }, Marshal.SizeOf<WindowsInput>());
         }
 
+        public static void UpdateKey(ushort key, bool pressed)
+        {
+            var input = new WindowsInput()
+            {
+                type = 0,
+                ki = new WindowsKeyboardInput()
+                {
+                    wVk = key,
+                    dwFlags = pressed ? KEYEVENTF_KEYDOWN : KEYEVENTF_KEYUP
+                }
+            };
+
+            SendInput(1, new[] { input }, Marshal.SizeOf<WindowsInput>());
+        }
+
         [DllImport("user32.dll")]
         private static extern uint SendInput(uint nInputs, WindowsInput[] pInputs, int cbSize);
 
-        
-
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Explicit)]
         private struct WindowsInput
         {
-            public uint type; // 0: mouse, 1: keyboard, 2: hardware
-            public WindowsMouseInput mi; 
+            [FieldOffset(0)] public uint type; // 0: mouse, 1: keyboard, 2: hardware
+            // since these share the same offset, it uses the one that is set.
+            [FieldOffset(4)] public WindowsMouseInput mi;
+            [FieldOffset(4)] public WindowsKeyboardInput ki;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -88,6 +103,16 @@ namespace Server
             public int dx;
             public int dy;
             public uint mouseData; // scroll wheel, etc.
+            public uint dwFlags; // actions
+            public uint time; // timestamp, 0: automatic
+            public IntPtr dwExtraInfo;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct WindowsKeyboardInput
+        {
+            public ushort wVk; // key-code
+            public ushort wScan; // hardware location
             public uint dwFlags; // actions
             public uint time; // timestamp, 0: automatic
             public IntPtr dwExtraInfo;
@@ -104,6 +129,10 @@ namespace Server
         private const uint MOUSEEVENTF_MIDDLEDOWN = 0x0020;
         private const uint MOUSEEVENTF_MIDDLEUP = 0x0040;
         private const uint MOUSEEVENTF_VIRTUALDESK = 0x4000;
+
+        // https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-keybdinput
+        private const uint KEYEVENTF_KEYDOWN = 0x0000;
+        private const uint KEYEVENTF_KEYUP = 0x0002;
 
     }
 }

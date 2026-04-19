@@ -51,6 +51,8 @@ namespace WindowsClient
 
             VideoIn.MouseUp += (s, e) => controlClient.UpdateMouse(e.ChangedButton, true);
             VideoIn.MouseDown += (s, e) => controlClient.UpdateMouse(e.ChangedButton, false);
+            VideoIn.KeyUp += (s, e) => controlClient.UpdateKey((ushort)KeyInterop.VirtualKeyFromKey(e.Key), true);
+            VideoIn.KeyDown += (s, e) => controlClient.UpdateKey((ushort)KeyInterop.VirtualKeyFromKey(e.Key), false);
         }
 
         private async Task RenderLoop(TcpClient client, CancellationToken ct = default)
