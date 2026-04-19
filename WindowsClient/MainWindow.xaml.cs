@@ -11,6 +11,7 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
@@ -26,6 +27,8 @@ namespace WindowsClient
         private CancellationTokenSource? renderCts = null;
 
         private WriteableBitmap bitmap;
+        private bool panelMinimized = false;
+        private bool logosRemoved = false;
 
         ControlClient controlClient;
 
@@ -51,10 +54,25 @@ namespace WindowsClient
 
             VideoIn.MouseUp += (s, e) => controlClient.UpdateMouse(e.ChangedButton, true);
             VideoIn.MouseDown += (s, e) => controlClient.UpdateMouse(e.ChangedButton, false);
-            VideoIn.KeyUp += (s, e) => controlClient.UpdateKey((ushort)KeyInterop.VirtualKeyFromKey(e.Key), true);
-            VideoIn.KeyDown += (s, e) => controlClient.UpdateKey((ushort)KeyInterop.VirtualKeyFromKey(e.Key), false);
+            VideoIn.PreviewKeyUp += (s, e) =>
+            {
+                if (!VideoIn.IsKeyboardFocusWithin)
+                    return;
 
-            Activated += (s, e) => VideoIn.Focus();
+                e.Handled = true;
+                controlClient.UpdateKey((ushort)KeyInterop.VirtualKeyFromKey(e.Key), true);
+            };
+            VideoIn.PreviewKeyDown += (s, e) =>
+            {
+                if (!VideoIn.IsKeyboardFocusWithin)
+                    return;
+
+                e.Handled = true;
+                controlClient.UpdateKey((ushort)KeyInterop.VirtualKeyFromKey(e.Key), false);
+            };
+
+            VideoIn.MouseDown += (s, e) => VideoIn.Focus();
+            Loaded += (s, e) => VideoIn.Focus();
         }
 
         private async Task RenderLoop(TcpClient client, CancellationToken ct = default)
@@ -125,10 +143,29 @@ namespace WindowsClient
                 await controlClient.Connect(new IPEndPoint(host, port));
                 Dispatcher.Invoke(() => statusSquare.Fill = new SolidColorBrush(Colors.Yellow));
                 TcpClient renderClient = await controlClient.GetVideoClient();
-                Dispatcher.Invoke(() => statusSquare.Fill = new SolidColorBrush(Colors.Green));
 
                 renderCts = new CancellationTokenSource();
                 _ = Task.Run(() => RenderLoop(renderClient, renderCts.Token));
+
+                Dispatcher.Invoke(() => {
+                    statusSquare.Fill = new SolidColorBrush(Colors.Green);
+                    RemoveLogos();
+
+                    var initInfo = controlClient.GetInitPacket();
+
+                    if (initInfo != null && !(Width == initInfo.Value.DisplayWidth && Height == initInfo.Value.DisplayHeight))
+                    {
+                        var result = MessageBox.Show($"Remote source is {initInfo.Value.DisplayWidth}x{initInfo.Value.DisplayHeight}.\n\nResize window to match?",
+                            "Resize Window", MessageBoxButton.YesNo);
+
+                        if (result == MessageBoxResult.Yes)
+                        {
+                            Width = initInfo.Value.DisplayWidth;
+                            Height = initInfo.Value.DisplayHeight;
+                        }
+                    }
+
+                });
             });
         }
 
@@ -140,6 +177,24 @@ namespace WindowsClient
                 statusSquare.Fill = new SolidColorBrush(Colors.Red);
                 renderCts?.Cancel();
             }
+        }
+
+        private void btnMinimizePanel_Click(object sender, RoutedEventArgs e)
+        {
+            panelMinimized = !panelMinimized;
+            panelContent.Visibility = panelMinimized ? Visibility.Collapsed : Visibility.Visible;
+            btnMinimizePanel.Content = panelMinimized ? "▶" : "◀";
+        }
+
+        private void RemoveLogos()
+        {
+            if (logosRemoved) return;
+            logosRemoved = true;
+
+            var fade = new DoubleAnimation(0, TimeSpan.FromSeconds(0.5));
+            watermark.BeginAnimation(OpacityProperty, fade);
+            hintBoxConnect.BeginAnimation(OpacityProperty, fade);
+            hintBoxStatus.BeginAnimation(OpacityProperty, fade);
         }
     }
 }

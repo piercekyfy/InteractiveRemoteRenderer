@@ -127,6 +127,14 @@ namespace WindowsClient
             return tcp;
         }
 
+        public ControlServerInitPacket? GetInitPacket()
+        {
+            if (!Connected)
+                return null;
+
+            return initInfo;
+        }
+
         public void UpdateScreenDimensions(float width, float height)
         {
             clientState.WindowSizeX = width;

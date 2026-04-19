@@ -72,7 +72,6 @@ namespace Server
 
         public static void UpdateKey(ushort key, bool pressed)
         {
-            Console.WriteLine("Key: " + key + " pressed: " + pressed);
             var input = new WindowsKeyboardInputWrapper()
             {
                 type = 1,
@@ -84,7 +83,6 @@ namespace Server
             };
 
             SendInput(1, new[] { input }, Marshal.SizeOf<WindowsKeyboardInputWrapper>());
-            Console.WriteLine(Marshal.GetLastWin32Error());
         }
 
         [DllImport("user32.dll")]
