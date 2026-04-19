@@ -74,7 +74,7 @@ namespace Server
         {
             var input = new WindowsInput()
             {
-                type = 0,
+                type = 1,
                 ki = new WindowsKeyboardInput()
                 {
                     wVk = key,

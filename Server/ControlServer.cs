@@ -61,7 +61,7 @@ namespace Server
 
                     // Update mouse pos
                     if(
-                        !(lastUpdate.Packet.CursorX == update.Packet.CursorX && lastUpdate.Packet.CursorX == update.Packet.CursorY)
+                        !(lastUpdate.Packet.CursorX == update.Packet.CursorX && lastUpdate.Packet.CursorY == update.Packet.CursorY)
                         && update.Packet.CursorX > 0 && update.Packet.CursorY > 0)
                     {
                         WindowsAPI.MoveMouse(configuration.VirtualDisplayOffsetX + (int)update.Packet.CursorX, configuration.VirtualDisplayOffsetY + (int)update.Packet.CursorY, configuration.VirtualDisplayOffsetX + configuration.DisplayWidth, configuration.VirtualDisplayOffsetY + configuration.DisplayHeight);
@@ -85,9 +85,9 @@ namespace Server
 
                     lastUpdate = update;
 
-                } catch (Exception)
+                } catch (Exception ex)
                 {
-                    Log("Disconnected.");
+                    Log("Disconnected. Ex: " + ex.Message);
                     client = null;
                     BeginAccept(ct);
                     return;
