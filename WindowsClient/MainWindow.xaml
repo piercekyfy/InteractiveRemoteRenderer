@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="1080" Width="1920">
     <Grid>
-        <Image x:Name="VideoIn" Stretch="Fill"></Image>
+        <Image x:Name="VideoIn" Stretch="Fill" Focusable="True"></Image>
         <StackPanel Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right">
             <Button x:Name="btnConnect" Width="100" Height="25" Content="Connect" Click="btnConnect_Click" Margin="0 5 25 0"/>
             <Button x:Name="btnDisconnect" Width="100" Height="25" Content="Disconnect" Click="btnDisconnect_Click" Margin="0 5 25 0"/>

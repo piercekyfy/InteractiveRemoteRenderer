@@ -57,12 +57,8 @@ namespace Server
                     await stream.ReadExactlyAsync(buffer.AsMemory(0, clientUpdateSize), ct);
                     ControlClientUpdatePackerWrapper update = new ControlClientUpdatePackerWrapper(MemoryMarshal.Read<ControlClientUpdatePacket>(buffer.AsSpan(0, clientUpdateSize)));
 
-                    // TODO: move to a real class
-
-                    Console.WriteLine(update.Packet.CursorY);
-
                     // Update mouse pos
-                    if(
+                    if (
                         !(lastUpdate.Packet.CursorX == update.Packet.CursorX && lastUpdate.Packet.CursorY == update.Packet.CursorY)
                         && update.Packet.CursorX > 0 && update.Packet.CursorY > 0)
                     {
@@ -73,10 +69,10 @@ namespace Server
                     if (lastUpdate.LeftPressed != update.LeftPressed)
                         WindowsAPI.UpdateMouseLeft(update.LeftPressed);
 
-                    if(lastUpdate.MiddlePressed != update.MiddlePressed)
+                    if (lastUpdate.MiddlePressed != update.MiddlePressed)
                         WindowsAPI.UpdateMouseMiddle(update.MiddlePressed);
 
-                    if(lastUpdate.RightPressed != update.RightPressed)
+                    if (lastUpdate.RightPressed != update.RightPressed)
                         WindowsAPI.UpdateMouseRight(update.RightPressed);
 
                     foreach (ushort key in update.PressedKeys)

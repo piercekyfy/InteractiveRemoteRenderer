@@ -54,17 +54,20 @@ namespace Common
 
         public void SetKeys(ushort[] pressed, ushort[] released)
         {
+            packet.PressedCount = 0;
+            packet.ReleasedCount = 0;
+
             for (int i = 0; i < 6; i++)
             {
                 if (pressed.Length > i)
                 {
                     unsafe { packet.PressedKeys[i] = pressed[i]; }
-                    packet.PressedCount++;
+                    packet.PressedCount = packet.PressedCount + 1;
                 }
                 if (released.Length > i)
                 {
                     unsafe { packet.ReleasedKeys[i] = released[i]; }
-                    packet.ReleasedCount++;
+                    packet.ReleasedCount = packet.ReleasedCount + 1;
                 }
             }
         }
