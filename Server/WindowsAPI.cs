@@ -72,6 +72,7 @@ namespace Server
 
         public static void UpdateKey(ushort key, bool pressed)
         {
+            Console.WriteLine("Key: " + key + " pressed: " + pressed);
             var input = new WindowsKeyboardInputWrapper()
             {
                 type = 1,
