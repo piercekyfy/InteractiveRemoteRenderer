@@ -11,9 +11,6 @@ namespace Server
     {
         public static void MoveMouse(int x, int y, int width, int height)
         {
-            Console.WriteLine($"Mouse wrapper: {Marshal.SizeOf<WindowsMouseInputWrapper>()}");
-            Console.WriteLine($"Keyboard wrapper: {Marshal.SizeOf<WindowsKeyboardInputWrapper>()}");
-
             int normX = (x * 65535) / width;
             int normY = (y * 65535) / height;
 
