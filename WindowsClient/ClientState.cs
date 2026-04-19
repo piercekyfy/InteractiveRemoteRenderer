@@ -45,12 +45,6 @@ namespace WindowsClient
         private ConcurrentQueue<ushort> pressedKeys = new ConcurrentQueue<ushort>();
         private ConcurrentQueue<ushort> releasedKeys = new ConcurrentQueue<ushort>();
 
-        public ClientState(float windowSizeX, float windowSizeY)
-        {
-            WindowSizeX = windowSizeX;
-            WindowSizeY = windowSizeY;            
-        }
-
         public void AddKeyPressed(ushort key) => pressedKeys.Enqueue(key);
         public void AddKeyReleased(ushort key) => releasedKeys.Enqueue(key);
 

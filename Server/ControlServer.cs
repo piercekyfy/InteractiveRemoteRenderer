@@ -57,6 +57,19 @@ namespace Server
                     await stream.ReadExactlyAsync(buffer.AsMemory(0, clientUpdateSize), ct);
                     ControlClientUpdatePackerWrapper update = new ControlClientUpdatePackerWrapper(MemoryMarshal.Read<ControlClientUpdatePacket>(buffer.AsSpan(0, clientUpdateSize)));
 
+                    byte[] pressedBytes = new byte[update.Packet.PressedCount * sizeof(ushort)];
+                    byte[] releasedBytes = new byte[update.Packet.ReleasedCount * sizeof(ushort)];
+                    await stream.ReadExactlyAsync(pressedBytes);
+                    await stream.ReadExactlyAsync(releasedBytes);
+
+                    ushort[] pressedKeys = new ushort[update.Packet.PressedCount];
+                    ushort[] releasedKeys = new ushort[update.Packet.ReleasedCount];
+
+                    for (int i = 0; i < pressedKeys.Length; i++)
+                        pressedKeys[i] = BitConverter.ToUInt16(pressedBytes, i * sizeof(ushort));
+                    for (int i = 0; i < releasedKeys.Length; i++)
+                        releasedKeys[i] = BitConverter.ToUInt16(releasedBytes, i * sizeof(ushort));
+
                     // Update mouse pos
                     if (
                         !(lastUpdate.Packet.CursorX == update.Packet.CursorX && lastUpdate.Packet.CursorY == update.Packet.CursorY)
@@ -75,10 +88,10 @@ namespace Server
                     if (lastUpdate.RightPressed != update.RightPressed)
                         WindowsAPI.UpdateMouseRight(update.RightPressed);
 
-                    foreach (ushort key in update.PressedKeys)
+                    foreach (ushort key in pressedKeys)
                         WindowsAPI.UpdateKey(key, true);
 
-                    foreach (ushort key in update.ReleasedKeys)
+                    foreach (ushort key in releasedKeys)
                         WindowsAPI.UpdateKey(key, false);
 
                     lastUpdate = update;

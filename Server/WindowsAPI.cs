@@ -83,6 +83,7 @@ namespace Server
             };
 
             SendInput(1, new[] { input }, Marshal.SizeOf<WindowsKeyboardInputWrapper>());
+            Console.WriteLine(Marshal.GetLastWin32Error());
         }
 
         [DllImport("user32.dll")]

@@ -18,7 +18,7 @@ namespace WindowsClient
         private ControlServerInitPacket initInfo;
         private TcpClient client;
 
-        private volatile ClientState clientState = new ClientState(1,1);
+        private volatile ClientState clientState = new ClientState();
 
         private CancellationTokenSource cts;
 
@@ -51,6 +51,7 @@ namespace WindowsClient
 
             cts = new CancellationTokenSource();
             Connected = true;
+            clientState = new ClientState();
 
             handleTask = Task.Run(() => Handle(cts.Token));
         }
@@ -86,13 +87,27 @@ namespace WindowsClient
                     CursorY = cInfo.Y
                 });
 
-                update.SetKeys(clientState.ConsumePressed(), clientState.ConsumeReleased());
-
                 update.SetPressedState(cInfo.ButtonLeftPressed, cInfo.ButtonMiddlePressed, cInfo.ButtonRightPressed);
+
+                ushort[] pressedKeys = clientState.ConsumePressed();
+                ushort[] releasedKeys = clientState.ConsumeReleased();
+
+                update.SetKeyPressedCounts(pressedKeys.Length, releasedKeys.Length);
+
+                byte[] pressedBuffer = new byte[pressedKeys.Length * sizeof(ushort)];
+                byte[] releasedBuffer = new byte[releasedKeys.Length * sizeof(ushort)];
+
+                for (int i = 0; i < pressedKeys.Length; i++)
+                    BitConverter.GetBytes(pressedKeys[i]).CopyTo(pressedBuffer, i * sizeof(ushort));
+
+                for (int i = 0; i < releasedKeys.Length; i++)
+                    BitConverter.GetBytes(releasedKeys[i]).CopyTo(releasedBuffer, i * sizeof(ushort));
 
                 MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref update.Packet, 1)).CopyTo(buffer);
 
                 await stream.WriteAsync(buffer.AsMemory(0, clientUpdateSize), ct);
+                await stream.WriteAsync(pressedBuffer);
+                await stream.WriteAsync(releasedBuffer);
 
                 await Task.Delay(1);
             }
