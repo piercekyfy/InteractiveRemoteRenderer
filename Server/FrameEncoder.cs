@@ -99,7 +99,23 @@ namespace IRR.Server
         private void InitializeAVResources()
         {
             AVCodec* codec = ffmpeg.avcodec_find_encoder_by_name(NVIDIA_CODEC);
-            
+            AVCodecContext* testCodec = null;
+
+            if(codec != null)
+            {
+                testCodec = ffmpeg.avcodec_alloc_context3(codec);
+                testCodec->width = targetWidth;
+                testCodec->height = targetHeight;
+                testCodec->time_base = new AVRational { num = 1, den = fps };
+                testCodec->pix_fmt = AVPixelFormat.AV_PIX_FMT_YUV420P;
+
+                if (ffmpeg.avcodec_open2(testCodec, codec, null) < 0)
+                {
+                    ffmpeg.avcodec_free_context(&testCodec);
+                    codec = null;
+                }
+            }
+
             if (codec == null)
             {
                 Console.WriteLine($"Codec {NVIDIA_CODEC} not found, trying {SOFTWARE_CODEC} instead...");
@@ -108,12 +124,13 @@ namespace IRR.Server
                     throw new Exception($"Failed to find codec ${SOFTWARE_CODEC}");
 
                 codecName = SOFTWARE_CODEC;
+                av = ffmpeg.avcodec_alloc_context3(codec);
             } else
             {
                 codecName = NVIDIA_CODEC;
+                av = testCodec;
             }
-
-            av = ffmpeg.avcodec_alloc_context3(codec);
+            
             av->width = targetWidth;
             av->height = targetHeight;
             av->time_base = new AVRational { num = 1, den = fps };
