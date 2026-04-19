@@ -10,7 +10,33 @@ namespace Common
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct ControlClientUpdatePacket
     {
-        public double CursorX { get; set; }
-        public double CursorY { get; set; }
+        public float CursorX { get; set; }
+        public float CursorY { get; set; }
+        public byte CursorPressedState { get; set; }
+    }
+
+    public class ControlClientUpdatePackerWrapper
+    {
+        public ref ControlClientUpdatePacket Packet => ref packet;
+        private ControlClientUpdatePacket packet;
+
+        public bool LeftPressed => (packet.CursorPressedState & 0x01) != 0;
+        public bool MiddlePressed => (packet.CursorPressedState & 0x02) != 0;
+        public bool RightPressed => (packet.CursorPressedState & 0x04) != 0;
+
+        public ControlClientUpdatePackerWrapper(ControlClientUpdatePacket packet)
+        {
+            this.packet = packet;
+        }
+
+        public void SetPressedState(bool leftPressed, bool middlePressed, bool rightPressed)
+        {
+            packet.CursorPressedState = (byte)(
+                (leftPressed ? 1 : 0) |
+                (middlePressed ? 1 : 0) << 1 |
+                (rightPressed ? 1 : 0) << 2);
+        }
+
+        
     }
 }

@@ -44,8 +44,13 @@ namespace WindowsClient
             CompositionTarget.Rendering += (s, e) =>
             {
                 System.Windows.Point localMousePos = Mouse.GetPosition(VideoIn);
-                controlClient.Update(new ClientInfo(VideoIn.ActualWidth, VideoIn.ActualHeight, localMousePos.X, localMousePos.Y));
+
+                controlClient.UpdateScreenDimensions((float)VideoIn.ActualWidth, (float)VideoIn.ActualHeight);
+                controlClient.UpdateCursorPosition((float)localMousePos.X, (float)localMousePos.Y);
             };
+
+            VideoIn.MouseUp += (s, e) => controlClient.UpdateMouse(e.ChangedButton, true);
+            VideoIn.MouseDown += (s, e) => controlClient.UpdateMouse(e.ChangedButton, false);
         }
 
         private async Task RenderLoop(TcpClient client, CancellationToken ct = default)

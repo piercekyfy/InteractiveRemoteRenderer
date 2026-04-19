@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Input;
 
 namespace WindowsClient
 {
@@ -17,7 +18,7 @@ namespace WindowsClient
         private ControlServerInitPacket initInfo;
         private TcpClient client;
 
-        private volatile ClientInfo lastInfo = new ClientInfo(1,1,1,1);
+        private volatile ClientState clientState = new ClientState(1,1);
 
         private CancellationTokenSource cts;
 
@@ -54,9 +55,9 @@ namespace WindowsClient
             handleTask = Task.Run(() => Handle(cts.Token));
         }
 
-        public void Update(ClientInfo info)
+        public void Update(ClientState info)
         {
-            lastInfo = info;
+            clientState = info;
         }
 
         public void Stop()
@@ -77,13 +78,17 @@ namespace WindowsClient
 
             while (!ct.IsCancellationRequested)
             {
-                ControlClientUpdatePacket update = new ControlClientUpdatePacket()
-                {
-                    CursorX = lastInfo.ProjectedCursorX(initInfo.DisplayWidth),
-                    CursorY = lastInfo.ProjectedCursorY(initInfo.DisplayHeight)
-                };
+                CursorInfo cInfo = clientState.CursorInfo.ProjectTo(clientState.WindowSizeX, clientState.WindowSizeY, initInfo.DisplayWidth, initInfo.DisplayHeight);
 
-                MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref update, 1)).CopyTo(buffer);
+                ControlClientUpdatePackerWrapper update = new ControlClientUpdatePackerWrapper(new ControlClientUpdatePacket()
+                {
+                    CursorX = cInfo.X,
+                    CursorY = cInfo.Y
+                });
+
+                update.SetPressedState(cInfo.ButtonLeftPressed, cInfo.ButtonMiddlePressed, cInfo.ButtonRightPressed);
+
+                MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref update.Packet, 1)).CopyTo(buffer);
 
                 await stream.WriteAsync(buffer.AsMemory(0, clientUpdateSize), ct);
 
@@ -103,6 +108,31 @@ namespace WindowsClient
             await tcp.ConnectAsync(new IPEndPoint(address, initInfo.VideoPort));
 
             return tcp;
+        }
+
+        public void UpdateScreenDimensions(float width, float height)
+        {
+            clientState.WindowSizeX = width;
+            clientState.WindowSizeY = height;
+        }
+
+        public void UpdateCursorPosition(float x, float y)
+        {
+            clientState.CursorInfo.X = x;
+            clientState.CursorInfo.Y = y;
+        }
+
+        public void UpdateMouse(MouseButton button, bool up)
+        {
+            switch(button)
+            {
+                case MouseButton.Left:
+                    clientState.CursorInfo.ButtonLeftPressed = !up; break;
+                case MouseButton.Middle:
+                    clientState.CursorInfo.ButtonMiddlePressed = !up; break;
+                case MouseButton.Right:
+                    clientState.CursorInfo.ButtonRightPressed = !up; break;
+            }
         }
     }
 }

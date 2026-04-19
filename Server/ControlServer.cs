@@ -17,6 +17,8 @@ namespace Server
         private TcpClient? client;
         private CancellationTokenSource cts;
 
+        private ControlClientUpdatePackerWrapper lastUpdate = new(default);
+
         public ControlServer(ServerInfo configuration, CancellationToken ct = default)
         {
             this.configuration = configuration;
@@ -53,12 +55,29 @@ namespace Server
                 try
                 {
                     await stream.ReadExactlyAsync(buffer.AsMemory(0, clientUpdateSize), ct);
-                    ControlClientUpdatePacket update = MemoryMarshal.Read<ControlClientUpdatePacket>(buffer.AsSpan(0, clientUpdateSize));
+                    ControlClientUpdatePackerWrapper update = new ControlClientUpdatePackerWrapper(MemoryMarshal.Read<ControlClientUpdatePacket>(buffer.AsSpan(0, clientUpdateSize)));
 
-                    if(update.CursorX > 0 && update.CursorY > 0)
+                    // TODO: move to a real class
+
+                    // Update mouse pos
+                    if(
+                        !(lastUpdate.Packet.CursorX == update.Packet.CursorX && lastUpdate.Packet.CursorX == update.Packet.CursorY)
+                        && update.Packet.CursorX > 0 && update.Packet.CursorY > 0)
                     {
-                        WindowsAPI.SetCursorPos(configuration.VirtualDisplayOffsetX + (int)update.CursorX,configuration.VirtualDisplayOffsetY + (int)update.CursorY);
+                        WindowsAPI.MoveMouse(configuration.VirtualDisplayOffsetX + (int)update.Packet.CursorX, configuration.VirtualDisplayOffsetY + (int)update.Packet.CursorY);
                     }
+
+                    // Update mouse click state
+                    if (lastUpdate.LeftPressed != update.LeftPressed)
+                        WindowsAPI.UpdateMouseLeft(update.LeftPressed);
+
+                    if(lastUpdate.MiddlePressed != update.MiddlePressed)
+                        WindowsAPI.UpdateMouseMiddle(update.MiddlePressed);
+
+                    if(lastUpdate.RightPressed != update.RightPressed)
+                        WindowsAPI.UpdateMouseRight(update.RightPressed);
+
+                    lastUpdate = update;
 
                 } catch (Exception)
                 {

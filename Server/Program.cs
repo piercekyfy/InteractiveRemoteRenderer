@@ -58,26 +58,34 @@ namespace IRR.Server
 
             // display
 
-            EnumerateDisplays();
-            Console.WriteLine();
-            Console.Write("Use GPU (index): ");
-            int gpuIndex = int.Parse(Console.ReadLine() ?? "0");
-            Console.Write("\nUse Display (index): ");
-            int displayIndex = int.Parse(Console.ReadLine() ?? "0");
-            Console.WriteLine("...");
-
             int fps = 30;
 
-            // Test Display and extract parameters
+            EnumerateDisplays();
+            Console.WriteLine();
+
+            bool initializedDisplay = false;
+            int gpuIndex = -1;
+            int displayIndex = -1;
             DisplayInfo displayInfo = default;
-            try
+            while (!initializedDisplay)
             {
-                using var captureTest = new DXCapture(1, gpuIndex, displayIndex);
-                displayInfo = captureTest.DisplayInfo;
-            }
-            catch (SharpGenException ex)
-            {
-                Console.WriteLine($"Failed to initialize DXGI capture. Do the specified GPU and Display indices exist?\nMessage: {ex.Message}");
+                Console.Write("Use GPU (index): ");
+                gpuIndex = int.Parse(Console.ReadLine() ?? "0");
+                Console.Write("\nUse Display (index): ");
+                displayIndex = int.Parse(Console.ReadLine() ?? "0");
+                Console.WriteLine("...");
+
+                // Test Display and extract parameters
+                try
+                {
+                    using var captureTest = new DXCapture(1, gpuIndex, displayIndex);
+                    displayInfo = captureTest.DisplayInfo;
+                    initializedDisplay = true;
+                }
+                catch (SharpGenException ex)
+                {
+                    Console.WriteLine($"Failed to initialize DXGI capture. Do the specified GPU and Display indices exist?\nMessage: {ex.Message}");
+                }
             }
 
             // control
