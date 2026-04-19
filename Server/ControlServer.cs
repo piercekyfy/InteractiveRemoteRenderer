@@ -64,7 +64,7 @@ namespace Server
                         !(lastUpdate.Packet.CursorX == update.Packet.CursorX && lastUpdate.Packet.CursorX == update.Packet.CursorY)
                         && update.Packet.CursorX > 0 && update.Packet.CursorY > 0)
                     {
-                        WindowsAPI.MoveMouse(configuration.VirtualDisplayOffsetX + (int)update.Packet.CursorX, configuration.VirtualDisplayOffsetY + (int)update.Packet.CursorY);
+                        WindowsAPI.MoveMouse(configuration.VirtualDisplayOffsetX + (int)update.Packet.CursorX, configuration.VirtualDisplayOffsetY + (int)update.Packet.CursorY, configuration.VirtualDisplayOffsetX + configuration.DisplayWidth, configuration.VirtualDisplayOffsetY + configuration.DisplayHeight);
                     }
 
                     // Update mouse click state

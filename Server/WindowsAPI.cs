@@ -9,19 +9,19 @@ namespace Server
 {
     public static class WindowsAPI
     {
-        [DllImport("user32.dll")]
-        public static extern bool SetCursorPos(int X, int Y);
-
-        public static void MoveMouse(int x, int y)
+        public static void MoveMouse(int x, int y, int width, int height)
         {
+            int normX = (x * 65535) / width;
+            int normY = (y * 65535) / height;
+
             var input = new WindowsInput()
             {
                 type = 0,
                 mi = new WindowsMouseInput()
                 {
-                    dx = x,
-                    dy = y,
-                    dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE
+                    dx = normX,
+                    dy = normY,
+                    dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK
                 }
             };
 
@@ -103,6 +103,7 @@ namespace Server
         private const uint MOUSEEVENTF_RIGHTUP = 0x0010;
         private const uint MOUSEEVENTF_MIDDLEDOWN = 0x0020;
         private const uint MOUSEEVENTF_MIDDLEUP = 0x0040;
+        private const uint MOUSEEVENTF_VIRTUALDESK = 0x4000;
 
     }
 }
