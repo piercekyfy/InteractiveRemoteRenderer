@@ -3,6 +3,7 @@ using Server;
 using SharpGen.Runtime;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using Vortice.DXGI;
 
 namespace IRR.Server
