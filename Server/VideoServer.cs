@@ -51,7 +51,7 @@ namespace Server
                 {
                     Log("Accepting...");
                     client = await listener.AcceptTcpClientAsync();
-                    client.SendTimeout = 100;
+                    client.SendTimeout = 5000;
                     var stream = client.GetStream();
                     Log("Accepted!");
 

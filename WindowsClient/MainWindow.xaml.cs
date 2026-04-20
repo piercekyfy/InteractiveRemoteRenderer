@@ -86,6 +86,7 @@ namespace WindowsClient
             {
                 try
                 {
+                    
                     await stream.ReadExactlyAsync(lenBuf, ct);
                     int size = BitConverter.ToInt32(lenBuf);
                     var buf = new byte[size];
