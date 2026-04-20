@@ -1,0 +1,31 @@
+sequenceDiagram
+    actor S as Server 
+    participant CS as Control Server
+    
+    actor C as Client
+
+    participant VS as Video Server
+    
+    C ->> CS: Connect
+    CS ->> C: Initialization
+
+    loop Control
+    C --) CS: Input
+    CS ->> S: Replicate
+    end
+
+    C ->> VS: Connect
+    
+    create participant CC as Capture Channel (DX Capture)
+    VS ->> CC: Create
+
+    create participant EC as Encode Channel (Frame Encoder)
+    VS ->> EC: Create
+    
+    loop Render
+    CC <<->> S: Duplicate
+    EC --) CC: Read
+    CC --) EC:
+    note over EC: Encode Frame
+    EC --) C: Write Frame
+    end
